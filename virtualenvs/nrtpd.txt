@@ -1,0 +1,4 @@
+streamparse
+numpy
+numba
+happybase

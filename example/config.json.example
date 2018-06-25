@@ -1,0 +1,27 @@
+{
+    "hbport": "1234",
+    "serializer": "json",
+    "topology_specs": "topologies/",
+    "virtualenv_specs": "virtualenvs/",
+    "envs": {
+        "prod": {
+            "user": "storm-user",
+            "nimbus": "nimbus.host",
+            "workers": ["worker1", "worker2", "worker3"],
+            "log": {
+                "path": "/path/to/logging/dir",
+                "file": "pystorm_{topology_name}_{component_name}_{task_id}_{pid}.log",
+                "max_bytes": 1000000,
+                "backup_count": 10,
+                "level": "info"
+            },
+            "use_ssh_for_nimbus": true,
+            "virtualenv_root": "/path/to/virtenv/dir",
+            "options": {
+                "supervisor.worker.timeout.secs": 600,
+                "topology.message.timeout.secs" : 60,
+                "topology.max.spout.pending" : 500
+            }
+        }
+    }
+}
