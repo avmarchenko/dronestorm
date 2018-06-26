@@ -1,0 +1,5 @@
+{
+    "kafka": "kafka_host",
+    "hbase": "hbase_host",
+    "thrift": "port"
+}

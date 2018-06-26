@@ -1,5 +1,10 @@
 {
-    "hbport": "1234",
+    "kafka": "kafka_host",
+    "kfgroupid": "mygroupid",
+    "timeout": 0.5,
+    "hbase": "hbase_host",
+    "thrift": port,
+    "raw_table": "raw_table_name",
     "serializer": "json",
     "topology_specs": "topologies/",
     "virtualenv_specs": "virtualenvs/",
@@ -17,6 +22,7 @@
             },
             "use_ssh_for_nimbus": true,
             "virtualenv_root": "/path/to/virtenv/dir",
+            "ui.port": ifdifferent
             "options": {
                 "supervisor.worker.timeout.secs": 600,
                 "topology.message.timeout.secs" : 60,

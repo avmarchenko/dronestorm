@@ -110,3 +110,4 @@ _resources/
 nohup*
 *.out
 config.json
+internal.json
