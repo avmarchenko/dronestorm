@@ -2,11 +2,9 @@
 # Copyright 2018 Alex Marchenko
 # Distributed under the terms of the Apache License 2.0
 """
-Drone Storm Bolt
-##################
-A Storm bolt is the processing machinery associated with some particular streaming
-data. This module utilizes the internals of the dronedirector to process streaming
-drone data.
+Writing Cartesian Coordinates to the DB
+############################################
+This module provides a bolt that is responsible for writing
 """
 from __future__ import division, print_function, absolute_import
 import numpy as np
@@ -27,7 +25,7 @@ class DroneBolt(Bolt):
         Tip:
             Method specific to streamparse.
         """
-        self.deque = deque(max_len=100)
+        self.logger.info(conf)
 
     def process(self, next_tuple):
         """

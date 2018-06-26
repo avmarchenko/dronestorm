@@ -2,32 +2,33 @@
 # Copyright 2018 Alex Marchenko
 # Distributed under the terms of the Apache License 2.0
 """
-Drone Storm Bolt
-##################
-A Storm bolt is the processing machinery associated with some particular streaming
-data. This module utilizes the internals of the dronedirector to process streaming
-drone data.
+Cartesian Coordinate Bolt
+###########################
+This module provides a Storm bolt that converts altitude, latitude, and longitude
+associated with a given aerial object (tuple message) to Cartesian coordiantes so
+that distances can be computed.
 """
 from __future__ import division, print_function, absolute_import
 import numpy as np
 import numba as nb
 import happybase as hb
-from streamparse import Bolt
-from dronedirector.distance import (lat_to_rad, lon_to_rad, earth_radius,
-                                    to_cartesian, compute_distances)
+from streamparse import Bolt, Stream
+#from dronedirector.distance import (lat_to_rad, lon_to_rad, earth_radius,
+#                                    to_cartesian, compute_distances)
 from datetime import datetime
 
 
-class DroneBolt(Bolt):
+class CartesianBolt(Bolt):
     """
-    Stuff
+    A Storm bolt that is responsible for converting altitude, latitude, and
+    longitude to Cartesian coordinates.
     """
     def initialize(self, conf, ctx):
         """
         Tip:
             Method specific to streamparse.
         """
-        self.deque = deque(max_len=100)
+        self.logger.info(conf)
 
     def process(self, next_tuple):
         """
@@ -36,7 +37,7 @@ class DroneBolt(Bolt):
         Tip:
             Method specific to streamparse.
         """
-        self.logger.info("Recieved: ", str(next_tuple))
+        self.logger.info("CartesianBolt: ", str(next_tuple))
 
 
 

@@ -9,23 +9,21 @@ Spout that reads from a Kafka topic performs a database update, and sends the da
 to Storm for stream processing.
 """
 from __future__ import division, print_function, absolute_import
+import os
 import json
 import uuid
 import random
 import numpy as np
 import happybase as hb
 from itertools import cycle
-from streamparse import Spout
+from streamparse import Spout, Stream
 from datetime import datetime
-from dronedirector.aerial import dtfmt
+#from dronedirector.aerial import dtfmt
 from confluent_kafka import Consumer
-from confluent_kafka.avro import AvroConsumer
+#from confluent_kafka.avro import AvroConsumer
 
 
-dtfmt = "%Y%m%d%H%M%S%f"
-
-
-class DroneStormSpout(Spout):
+class DroneSpout(Spout):
     """
     A Storm spout that receives messages from a Kafka broker, sends them for proximity
     monitoring, and records its actions.
@@ -34,7 +32,9 @@ class DroneStormSpout(Spout):
         The configuration file, internal.json (see config/internal.json.example) must
         be present in the root of this repository 
     """
-    outputs = ['uid', 'alt', 'lat', 'lon', 'dronetime', 'region']
+    outputs = ['pk', 'altitude', 'latitude', 'longitude']
+    #outputs = [Stream(name='cartesian-bolt', fields=['pk', 'alt', 'lat', 'lon'])]
+               #Stream(name='write-raw-bolt', fields=['uid'])]
 
     def initialize(self, stormconf, context):
         """
@@ -44,8 +44,10 @@ class DroneStormSpout(Spout):
         Note:
             Method internal to streamparse used to setup the spout.
         """
-        with open("../../config.json") as f:
+        self.logger.warn(os.path.dirname(os.path.realpath(__file__)))
+        with open("/opt/internal.json") as f:
             config = json.load(f)
+        self.logger.warn("Config: " + str(config))
         # Our kafka consumer client
         self.timeout = float(config['timeout'])
         self.ckc = Consumer({'bootstrap.servers': config['kafka'], 'group.id': config['kfgroupid'],
@@ -60,12 +62,11 @@ class DroneStormSpout(Spout):
         Note:
             Method internal to streamparse that follows Storm's API.
         """
-        message = self.ckc.poll(self.timeout)
-        if message is None:
-            continue
-        self.logger.info(str(message))
-        self.emit([message.uid, message.altitude, message.latitude,
-                   message.longitude, message.dronetime, message.region])
+        msg = self.ckc.poll(self.timeout)
+        if msg is not None:
+            self.logger.info("DroneSpout: " + str(msg))
+            pk = msg.uid + msg.dronetime
+            self.emit([pk, msg.altitude, msg.latitude, msg.longitude], stream="cartesian-bolt")
         
 
 
