@@ -1,5 +1,10 @@
 {
     "kafka": "kafka_host",
+    "kfgroupid": "mygroupid",
+    "raw_topic": "raw_drones",
+    "timeout": "0.5",
     "hbase": "hbase_host",
-    "thrift": "port"
+    "thrift": "port",
+    "raw_table": "raw_table_name",
+    "density": "2000"
 }

@@ -9,13 +9,7 @@ Spout that reads from a Kafka topic performs a database update, and sends the da
 to Storm for stream processing.
 """
 from __future__ import division, print_function, absolute_import
-import os
 import json
-import uuid
-import random
-import numpy as np
-import happybase as hb
-from itertools import cycle
 from streamparse import Spout, Stream
 from datetime import datetime
 #from dronedirector.aerial import dtfmt
@@ -32,7 +26,9 @@ class DroneSpout(Spout):
         The configuration file, internal.json (see config/internal.json.example) must
         be present in the root of this repository 
     """
-    outputs = ['pk', 'altitude', 'latitude', 'longitude']
+    outputs = [Stream(name='cartesian-bolt', fields=['pk', "altitude", "latitude", "longitude"]),
+               Stream(fields=['uid', 'altitude', 'latitude', 'longitude', 'dronetime', 'region'])]
+    #outputs = ['pk', 'altitude', 'latitude', 'longitude']
     #outputs = [Stream(name='cartesian-bolt', fields=['pk', 'alt', 'lat', 'lon'])]
                #Stream(name='write-raw-bolt', fields=['uid'])]
 
@@ -47,12 +43,16 @@ class DroneSpout(Spout):
         self.logger.warn(os.path.dirname(os.path.realpath(__file__)))
         with open("/opt/internal.json") as f:
             config = json.load(f)
-        self.logger.warn("Config: " + str(config))
+        self.internal_config = config
+        self.logger.warn("Internal Config: " + str(config))
+        self.logger.warn("Storm Config: " + str(stormconf))
+        self.logger.warn("Storm Context: "+ str(context))
         # Our kafka consumer client
         self.timeout = float(config['timeout'])
         self.ckc = Consumer({'bootstrap.servers': config['kafka'], 'group.id': config['kfgroupid'],
                              'default.topic.config': {'auto.offset.reset': "smallest"}})
-        self.conn = hb.Connection(config['hbase'], port=config['thrift'])
+        self.ckc.subscribe([config['raw_topic']])
+        self.conn = hb.Connection(config['hbase'], port=int(config['thrift']))
         self.raw = self.conn.table(str.encode(config['raw_table']))
 
     def next_tuple(self):
@@ -64,12 +64,11 @@ class DroneSpout(Spout):
         """
         msg = self.ckc.poll(self.timeout)
         if msg is not None:
-            self.logger.info("DroneSpout: " + str(msg))
-            pk = msg.uid + msg.dronetime
-            self.emit([pk, msg.altitude, msg.latitude, msg.longitude], stream="cartesian-bolt")
-        
-
-
+            text = msg.value().decode("utf-8")
+            if "uid" in text:
+                data = json.loads(text)
+                pk = data['uid'] + data['dronetime']
+                self.emit([pk, msg['altitude'], msg['latitude'] msg['longitude'], stream="cartesian-bolt")
 
 
 #class TestCoordinateSpout(Spout):

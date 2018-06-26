@@ -1,10 +1,4 @@
 {
-    "kafka": "kafka_host",
-    "kfgroupid": "mygroupid",
-    "timeout": 0.5,
-    "hbase": "hbase_host",
-    "thrift": port,
-    "raw_table": "raw_table_name",
     "serializer": "json",
     "topology_specs": "topologies/",
     "virtualenv_specs": "virtualenvs/",

@@ -1,6 +1,4 @@
 streamparse
-numpy
-numba
 dronedirector
 happybase
 confluent-kafka

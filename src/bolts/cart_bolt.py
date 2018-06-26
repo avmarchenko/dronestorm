@@ -9,9 +9,6 @@ associated with a given aerial object (tuple message) to Cartesian coordiantes s
 that distances can be computed.
 """
 from __future__ import division, print_function, absolute_import
-import numpy as np
-import numba as nb
-import happybase as hb
 from streamparse import Bolt, Stream
 #from dronedirector.distance import (lat_to_rad, lon_to_rad, earth_radius,
 #                                    to_cartesian, compute_distances)
@@ -28,7 +25,8 @@ class CartesianBolt(Bolt):
         Tip:
             Method specific to streamparse.
         """
-        self.logger.info(conf)
+        self.logger.warn("Config: " + str(conf))
+        self.logger.warn("Context: "+ str(ctx))
 
     def process(self, next_tuple):
         """
