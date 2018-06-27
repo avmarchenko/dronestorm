@@ -78,12 +78,13 @@ class SimpleDroneBolt(Bolt):
 
     def process(self, tup):
         """All in one stream processing; conversion, calculation, and DB update."""
-        uid = tup[0]
-        dronetime = tup[1]
-        region = tup[2]
-        altitude = tup[3]
-        latitude = tup[4]
-        longitude = tup[5]
+        self.logger.info(str(tup))
+        uid = tup.values[0]
+        dronetime = tup.values[1]
+        region = tup.values[2]
+        altitude = tup.values[3]
+        latitude = tup.values[4]
+        longitude = tup.values[5]
         pk = uid + dronetime    # String concat
         # Write raw data to HBase
         self.raw.put(pk, {b'uuid:uuid': str.encode(uid),
