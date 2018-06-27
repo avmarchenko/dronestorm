@@ -66,7 +66,7 @@ class SimpleDroneBolt(Bolt):
         with open("/opt/internal.json") as f:
             config = json.load(f)
         self.current = FixedLenDict(max_size=config['density'])
-        self.conn = hb.Connection(config['hbase'], port=config['thrift'])
+        self.conn = hb.Connection(config['hbase'], port=int(config['thrift']))
         self.raw = self.conn.table(str.encode(config['raw_table']))
         self.cart = self.conn.table(str.encode(config['cart_table']))
         self.prox = self.conn.table(str.encode(config['prox_table']))
