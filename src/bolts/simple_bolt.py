@@ -66,10 +66,7 @@ class SimpleDroneBolt(Bolt):
         with open("/opt/internal.json") as f:
             config = json.load(f)
         self.current = FixedLenDict(max_size=config['density'])
-        self.conn = hb.Connection(config['hbase'], port=int(config['thrift']))
-        self.raw = self.conn.table(str.encode(config['raw_table']))
-        self.cart = self.conn.table(str.encode(config['cart_table']))
-        self.prox = self.conn.table(str.encode(config['prox_table']))
+        self.config = config
 
     def _compute_dist(self):
         """A thin wrapper around compute_distances from dronedirector."""
@@ -78,7 +75,6 @@ class SimpleDroneBolt(Bolt):
 
     def process(self, tup):
         """All in one stream processing; conversion, calculation, and DB update."""
-        self.logger.info(str(tup))
         uid = tup.values[0]
         dronetime = tup.values[1]
         region = tup.values[2]
@@ -87,28 +83,33 @@ class SimpleDroneBolt(Bolt):
         longitude = tup.values[5]
         pk = uid + dronetime    # String concat
         # Write raw data to HBase
-        self.raw.put(pk, {b'uuid:uuid': str.encode(uid),
-                          b'datetime:dronetime': str.encode(dronetime),
-                          b'spatial:alt': str.encode(str(altitude)), 
-                          b'spatial:lat': str.encode(str(latitude)),
-                          b'spatial:lon': str.encode(str(longitude))})
+        conn = hb.Connection(self.config['hbase'], port=int(self.config['thrift'])
+        raw = conn.table(str.encode(config['raw_table']))
+        raw.put(pk, {b'uuid:uuid': str.encode(uid),
+                     b'datetime:dronetime': str.encode(dronetime),
+                     b'spatial:alt': str.encode(str(altitude)), 
+                     b'spatial:lat': str.encode(str(latitude)),
+                     b'spatial:lon': str.encode(str(longitude))})
+        conn.close()
         # Compute Cartesian
         lat = lat_to_rad(latitude)
         lon = lon_to_rad(longitude)
         x, y, z, r = to_cartesian(altitude, lat, lon)
-        self.raw.put(pk, {b'uuid:uuid': str.encode(uid),
-                          b'datetime:carttime': str.encode(datetime.now().strftime(dtfmt)),
-                          b'spatial:x': str.encode(str(x)), 
-                          b'spatial:y': str.encode(str(y)),
-                          b'spatial:z': str.encode(str(z)),
-                          b'spatial:r': str.encode(str(r))})
+        conn = hb.Connection(self.config['hbase'], port=int(self.config['thrift'])
+        cart = conn.table(str.encode(self.config['cart_table']))
+        cart.put(pk, {b'uuid:uuid': str.encode(uid),
+                      b'datetime:carttime': str.encode(datetime.now().strftime(dtfmt)),
+                      b'spatial:x': str.encode(str(x)), 
+                      b'spatial:y': str.encode(str(y)),
+                      b'spatial:z': str.encode(str(z)),
+                      b'spatial:r': str.encode(str(r))})
+        conn.close()
         # Add the data to our current drones and compute
         self.current[uid] = (x, y, z)
         dxyz = self._compute_dist()
-        self.logger.info("current: " + str(self.current))
-        self.logger.info("current: " + str(len(self.current)))
-        self.logger.info("dxyz:" + str(dxyz))
         t = datetime.now().strftime(dtfmt)
+        conn = hb.Connection(self.config['hbase'], port=int(self.config['thrift'])
+        prox = conn.table(str.encode(self.config['prox_table']))
         k = 0
         keys = list(self.current.keys())   # Because of how dxyz is return
         n = len(keys)                      # we iterate over keys in this
@@ -121,11 +122,11 @@ class SimpleDroneBolt(Bolt):
                 if d[3] < 100:
                     self.logger.warn("Drones {}, {} are {} meters apart!".format(i, j, str(d[3])))
                 pkk = i + j + t
-                self.prox.put(pkk, {b'uuid:uuid0': str.encode(i),
-                                    b'uuid:uuid1': str.encode(j),
-                                    b'datetime:datetime': str.encode(str(t)),
-                                    b'spatial:dx': str.encode(str(d[0])), 
-                                    b'spatial:dy': str.encode(str(d[1])),
-                                    b'spatial:dz': str.encode(str(d[2])),
-                                    b'spatial:dr': str.encode(str(d[3]))})
+                prox.put(pkk, {b'uuid:uuid0': str.encode(i),
+                               b'uuid:uuid1': str.encode(j),
+                               b'datetime:datetime': str.encode(str(t)),
+                               b'spatial:dx': str.encode(str(d[0])), 
+                               b'spatial:dy': str.encode(str(d[1])),
+                               b'spatial:dz': str.encode(str(d[2])),
+                               b'spatial:dr': str.encode(str(d[3]))})
                 k += 1
