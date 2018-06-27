@@ -84,8 +84,8 @@ class SimpleDroneBolt(Bolt):
         pk = uid + dronetime    # String concat
 
         # Write raw data to HBase
-        conn = hb.Connection(self.config['hbase'], port=int(self.config['thrift'])
-        raw = conn.table(str.encode(config['raw_table']))
+        conn = hb.Connection(self.config['hbase'], port=int(self.config['thrift']))
+        raw = conn.table(str.encode(self.config['raw_table']))
         raw.put(pk, {b'uuid:uuid': str.encode(uid),
                      b'datetime:dronetime': str.encode(dronetime),
                      b'spatial:alt': str.encode(str(altitude)), 
@@ -97,7 +97,7 @@ class SimpleDroneBolt(Bolt):
         lat = lat_to_rad(latitude)
         lon = lon_to_rad(longitude)
         x, y, z, r = to_cartesian(altitude, lat, lon)
-        conn = hb.Connection(self.config['hbase'], port=int(self.config['thrift'])
+        conn = hb.Connection(self.config['hbase'], port=int(self.config['thrift']))
         cart = conn.table(str.encode(self.config['cart_table']))
         cart.put(pk, {b'uuid:uuid': str.encode(uid),
                       b'datetime:carttime': str.encode(datetime.now().strftime(dtfmt)),
@@ -111,7 +111,7 @@ class SimpleDroneBolt(Bolt):
         self.current[uid] = (x, y, z)
         dxyz = self._compute_dist()
         t = datetime.now().strftime(dtfmt)
-        conn = hb.Connection(self.config['hbase'], port=int(self.config['thrift'])
+        conn = hb.Connection(self.config['hbase'], port=int(self.config['thrift']))
         prox = conn.table(str.encode(self.config['prox_table']))
         k = 0
         keys = list(self.current.keys())   # Because of how dxyz is return
