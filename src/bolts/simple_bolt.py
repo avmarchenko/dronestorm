@@ -82,6 +82,7 @@ class SimpleDroneBolt(Bolt):
         latitude = tup.values[4]
         longitude = tup.values[5]
         pk = uid + dronetime    # String concat
+
         # Write raw data to HBase
         conn = hb.Connection(self.config['hbase'], port=int(self.config['thrift'])
         raw = conn.table(str.encode(config['raw_table']))
@@ -91,6 +92,7 @@ class SimpleDroneBolt(Bolt):
                      b'spatial:lat': str.encode(str(latitude)),
                      b'spatial:lon': str.encode(str(longitude))})
         conn.close()
+
         # Compute Cartesian
         lat = lat_to_rad(latitude)
         lon = lon_to_rad(longitude)
@@ -104,6 +106,7 @@ class SimpleDroneBolt(Bolt):
                       b'spatial:z': str.encode(str(z)),
                       b'spatial:r': str.encode(str(r))})
         conn.close()
+
         # Add the data to our current drones and compute
         self.current[uid] = (x, y, z)
         dxyz = self._compute_dist()
@@ -130,3 +133,4 @@ class SimpleDroneBolt(Bolt):
                                b'spatial:dz': str.encode(str(d[2])),
                                b'spatial:dr': str.encode(str(d[3]))})
                 k += 1
+        conn.close()
