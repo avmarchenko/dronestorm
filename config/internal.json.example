@@ -6,5 +6,7 @@
     "hbase": "hbase_host",
     "thrift": "port",
     "raw_table": "raw_table_name",
+    "cart_table": "cart_table_name",
+    "prox_table": "proximity_table_name",
     "density": "2000"
 }

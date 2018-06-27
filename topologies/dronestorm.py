@@ -7,24 +7,11 @@ Drone Storm Topology
 """
 from __future__ import print_function, absolute_import
 from streamparse import Topology
-from spouts.kafka_spout import DroneSpout
-from bolts.cart_bolt import CartesianBolt
+from spouts.simple_spout import SimpleDroneSpout
+from bolts.simple_bolt import SimpleDroneBolt
 
 
-class DroneTopology(Topology):
-    """
-    Definition of the Storm topology.
-    """
-    drone_spout = DroneSpout.spec(name='drone-spout')
-    cart_bolt = CartesianBolt.spec(name='cartesian-bolt', inputs=[drone_spout])
-
-
-
-
-#from spouts.producer import TestCoordinateSpout
-#from bolts.consumer import TestProximityBolt
-
-
-#class NRTPDTopo(Topology):
-#    nrtpd_spout = TestCoordinateSpout.spec()
-#    nrtpd_bolt = TestProximityBolt.spec(inputs={nrtpd_spout: Grouping.fields('id0')}, par=2)
+class SimpleDroneTopology(Topology):
+    """Definition of the Storm topology."""
+    drone_spout = SimpleDroneSpout.spec()
+    drone_bolt = SimpleDroneBolt.spec(inputs=[drone_spout])
