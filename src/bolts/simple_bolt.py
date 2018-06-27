@@ -105,13 +105,19 @@ class SimpleDroneBolt(Bolt):
         # Add the data to our current drones and compute
         self.current[uid] = (x, y, z)
         dxyz = self._compute_dist()
+        self.logger.info("current: " + str(self.current))
+        self.logger.info("current: " + str(len(self.current)))
+        self.logger.info("dxyz:" + str(dxyz))
         t = datetime.now().strftime(dtfmt)
         k = 0
-        for i in self.current.keys():
-            for j in self.current.keys():
-                if i == j:
-                    continue
-                d = dxyz[k]
+        keys = list(self.current.keys())   # Because of how dxyz is return
+        n = len(keys)                      # we iterate over keys in this
+        for ii in range(n):                # manner.
+            i = keys[ii]                   # i is the value of the iith key
+            for jj in range(ii + 1, n):
+                j = keys[jj]               # j is the value of the jjth key
+                self.logger.info("I: " + i + "    J :" + j + "    k: " + str(k))
+                d = dxyz[k, :]
                 if d[3] < 100:
                     self.logger.warn("Drones {}, {} are {} meters apart!".format(i, j, str(d[3])))
                 pkk = i + j + t
