@@ -56,6 +56,13 @@ class SimpleDroneBolt(Bolt):
     A Storm bolt that processes (all in one) and records data coming from
     simulated delivery drones.
     """
+    def _connect(self):
+        """Connect to DB."""
+        self.conn = hb.Connection(self.config['hbase'], port=int(self.config['thrift']), timeout=None, transport="buffered")
+        self.raw = self.conn.table(str.encode(self.config['raw_table']))
+        self.cart = self.conn.table(str.encode(self.config['cart_table']))
+        self.prox = self.conn.table(str.encode(self.config['prox_table']))
+
     def initialize(self, conf, ctx):
         """
         Method specific to streamparse -- used to configure DB connections.
@@ -67,6 +74,7 @@ class SimpleDroneBolt(Bolt):
             config = json.load(f)
         self.current = FixedLenDict(max_size=config['density'])
         self.config = config
+        self._connect()
 
     def _compute_dist(self):
         """A thin wrapper around compute_distances from dronedirector."""
@@ -84,35 +92,44 @@ class SimpleDroneBolt(Bolt):
         pk = uid + dronetime    # String concat
 
         # Write raw data to HBase
-        conn = hb.Connection(self.config['hbase'], port=int(self.config['thrift']))
-        raw = conn.table(str.encode(self.config['raw_table']))
-        raw.put(pk, {b'uuid:uuid': str.encode(uid),
+        try:
+            self.raw.put(pk, {b'uuid:uuid': str.encode(uid),
                      b'datetime:dronetime': str.encode(dronetime),
                      b'spatial:alt': str.encode(str(altitude)), 
                      b'spatial:lat': str.encode(str(latitude)),
                      b'spatial:lon': str.encode(str(longitude))})
-        conn.close()
+        except:
+            self._connect()
+            self.raw.put(pk, {b'uuid:uuid': str.encode(uid),
+                     b'datetime:dronetime': str.encode(dronetime),
+                     b'spatial:alt': str.encode(str(altitude)), 
+                     b'spatial:lat': str.encode(str(latitude)),
+                     b'spatial:lon': str.encode(str(longitude))})
 
         # Compute Cartesian
         lat = lat_to_rad(latitude)
         lon = lon_to_rad(longitude)
         x, y, z, r = to_cartesian(altitude, lat, lon)
-        conn = hb.Connection(self.config['hbase'], port=int(self.config['thrift']))
-        cart = conn.table(str.encode(self.config['cart_table']))
-        cart.put(pk, {b'uuid:uuid': str.encode(uid),
+        try:
+            self.cart.put(pk, {b'uuid:uuid': str.encode(uid),
                       b'datetime:carttime': str.encode(datetime.now().strftime(dtfmt)),
                       b'spatial:x': str.encode(str(x)), 
                       b'spatial:y': str.encode(str(y)),
                       b'spatial:z': str.encode(str(z)),
                       b'spatial:r': str.encode(str(r))})
-        conn.close()
+        except:
+            self._connect()
+            self.cart.put(pk, {b'uuid:uuid': str.encode(uid),
+                      b'datetime:carttime': str.encode(datetime.now().strftime(dtfmt)),
+                      b'spatial:x': str.encode(str(x)), 
+                      b'spatial:y': str.encode(str(y)),
+                      b'spatial:z': str.encode(str(z)),
+                      b'spatial:r': str.encode(str(r))})
 
         # Add the data to our current drones and compute
         self.current[uid] = (x, y, z)
         dxyz = self._compute_dist()
         t = datetime.now().strftime(dtfmt)
-        conn = hb.Connection(self.config['hbase'], port=int(self.config['thrift']))
-        prox = conn.table(str.encode(self.config['prox_table']))
         k = 0
         keys = list(self.current.keys())   # Because of how dxyz is return
         n = len(keys)                      # we iterate over keys in this
@@ -125,7 +142,17 @@ class SimpleDroneBolt(Bolt):
                 if d[3] < 100:
                     self.logger.warn("Drones {}, {} are {} meters apart!".format(i, j, str(d[3])))
                 pkk = i + j + t
-                prox.put(pkk, {b'uuid:uuid0': str.encode(i),
+                try:
+                    self.prox.put(pkk, {b'uuid:uuid0': str.encode(i),
+                               b'uuid:uuid1': str.encode(j),
+                               b'datetime:datetime': str.encode(str(t)),
+                               b'spatial:dx': str.encode(str(d[0])), 
+                               b'spatial:dy': str.encode(str(d[1])),
+                               b'spatial:dz': str.encode(str(d[2])),
+                               b'spatial:dr': str.encode(str(d[3]))})
+                except:
+                    self._connect()
+                    self.prox.put(pkk, {b'uuid:uuid0': str.encode(i),
                                b'uuid:uuid1': str.encode(j),
                                b'datetime:datetime': str.encode(str(t)),
                                b'spatial:dx': str.encode(str(d[0])), 
@@ -133,4 +160,3 @@ class SimpleDroneBolt(Bolt):
                                b'spatial:dz': str.encode(str(d[2])),
                                b'spatial:dr': str.encode(str(d[3]))})
                 k += 1
-        conn.close()
